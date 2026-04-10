@@ -42,7 +42,7 @@ return [
     ],
 
     'ai_engine' => [
-        'url' => env('PYTHON_API_URL', env('AI_ENGINE_URL', 'http://127.0.0.1:8001/api/v1/audit/url')),
+        'url' => env('AI_ENGINE_URL'),
         'key' => env('API_SECRET_KEY'),
     ],
 ];

@@ -26,7 +26,7 @@ services:
         value: false
       - key: DB_CONNECTION
         value: sqlite
-      - key: PYTHON_API_URL
+      - key: AI_ENGINE_URL
         value: https://privacyguard-backend.onrender.com/api/v1/audit/url
       - key: API_SECRET_KEY
         value: Wb36XsqhYwRsxcXU

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
 
@@ -8,6 +8,11 @@ const isScanning = ref(false);
 const result = ref(null);
 const error = ref(null);
 const hasPaid = ref(false);
+
+onMounted(() => {
+    // Ping the backend to wake it up from sleep mode
+    axios.get('/api/wakeup').catch(() => {});
+});
 
 const loadRazorpayScript = () => {
     return new Promise((resolve) => {
