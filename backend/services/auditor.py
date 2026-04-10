@@ -9,13 +9,6 @@ logger = logging.getLogger(__name__)
 
 class AuditorService:
     def __init__(self):
-        # Using Gemini 1.5 Flash via langchain
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
-            google_api_key=settings.GOOGLE_API_KEY,
-            temperature=0.0
-        )
-        
         # We enforce a JSON output format via the prompt and LangChain's JSON parser
         self.parser = JsonOutputParser()
         
@@ -47,16 +40,29 @@ Return ONLY valid JSON that conforms to the following schema:
             partial_variables={"format_instructions": self.parser.get_format_instructions()},
         )
 
-        self.chain = self.prompt | self.llm | self.parser
+    def _get_chain(self):
+        if not settings.GOOGLE_API_KEY:
+            raise ValueError("GOOGLE_API_KEY is not configured in the backend environment.")
+            
+        # Using Gemini 1.5 Flash via langchain
+        llm = ChatGoogleGenerativeAI(
+            model=settings.MODEL_NAME,
+            google_api_key=settings.GOOGLE_API_KEY,
+            temperature=0.0
+        )
+        return self.prompt | llm | self.parser
 
     async def analyze_text(self, text: str) -> dict:
         """
         Takes raw legal text and returns a structured GDPR compliance audit dictionary.
         """
         try:
+            chain = self._get_chain()
             # We use an async invocation
-            result = await self.chain.ainvoke({"legal_text": text})
+            result = await chain.ainvoke({"legal_text": text})
             return result
+        except ValueError as e:
+            raise e
         except Exception as e:
             logger.error(f"Failed to analyze text with Gemini: {str(e)}")
-            raise ValueError("Error communicating with AI Auditor Engine.")
+            raise ValueError(f"Error communicating with AI Auditor Engine: {str(e)}")

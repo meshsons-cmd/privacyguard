@@ -59,9 +59,14 @@ Route::post('/api/scan', function (Request $request) {
             return response()->json($data);
         }
 
+        $errorData = $response->json();
+        $errorMessage = is_array($errorData) && isset($errorData['detail']) 
+            ? (is_string($errorData['detail']) ? $errorData['detail'] : json_encode($errorData['detail'])) 
+            : 'The AI Auditor Engine returned an error.';
+
         return response()->json([
-            'message' => 'The AI Auditor Engine returned an error.',
-            'details' => $response->json()
+            'message' => $errorMessage,
+            'details' => $errorData
         ], $response->status());
 
     } catch (\Exception $e) {
