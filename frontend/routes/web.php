@@ -30,13 +30,13 @@ Route::post('/api/scan', function (Request $request) {
     ]);
 
     // Connect the Laravel frontend to the Python API using secure HTTP requests
-    // Use env('PYTHON_API_URL') or env('AI_ENGINE_URL') for dynamic Cloud deployment (Railway/Render)
-    $apiUrl = env('PYTHON_API_URL', env('AI_ENGINE_URL', 'http://127.0.0.1:8001/api/v1/audit/url'));
+    $apiUrl = config('services.ai_engine.url');
+    $apiKey = config('services.ai_engine.key');
     
     try {
         $response = Http::withHeaders([
-            'X-API-Key' => env('API_SECRET_KEY'),
-            'Authorization' => 'Bearer ' . env('API_SECRET_KEY')
+            'X-API-Key' => $apiKey,
+            'Authorization' => 'Bearer ' . $apiKey
         ])->timeout(60)->post($apiUrl, [
             'url' => $request->input('url')
         ]);
@@ -72,7 +72,7 @@ Route::post('/api/scan', function (Request $request) {
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('AI Auditor Proxy Failed: ' . $e->getMessage());
         return response()->json([
-            'message' => 'Unable to reach the AI Auditor Engine. Please ensure the Python backend is running and accessible.',
+            'message' => 'Connection to AI Engine failed: ' . $e->getMessage(),
             'debug_error' => $e->getMessage()
         ], 500);
     }

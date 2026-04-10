@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Render sets RENDER=true, so we can unconditionally force HTTPS there.
         // We also check for X-Forwarded-Proto just in case.
-        if (env('RENDER') || env('APP_ENV') === 'production' || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) {
+        if (config('app.env') === 'production' || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || isset($_SERVER['RENDER'])) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
     }

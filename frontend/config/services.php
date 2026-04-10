@@ -40,4 +40,9 @@ return [
         'secret' => env('RAZORPAY_SECRET'),
         'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
     ],
+
+    'ai_engine' => [
+        'url' => env('PYTHON_API_URL', env('AI_ENGINE_URL', 'http://127.0.0.1:8001/api/v1/audit/url')),
+        'key' => env('API_SECRET_KEY'),
+    ],
 ];
