@@ -25,7 +25,7 @@ class ReportController extends Controller
             $response = Http::withHeaders([
                 'X-API-Key' => $apiKey,
                 'Authorization' => 'Bearer ' . $apiKey
-            ])->timeout(60)->post($apiUrl, [
+            ])->timeout(180)->post($apiUrl, [
                 'url' => $request->input('url')
             ]);
 

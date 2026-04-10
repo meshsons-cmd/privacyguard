@@ -94,7 +94,7 @@ const startScan = async () => {
     try {
         // Calling the Python FastAPI backend via the Laravel proxy or directly
         // Here we call the local Laravel route which proxies to Python securely
-        const response = await axios.post('/api/scan', { url: url.value });
+        const response = await axios.post('/api/scan', { url: url.value }, { timeout: 180000 });
         result.value = response.data;
     } catch (err) {
         error.value = err.response?.data?.message || "Failed to analyze the website. Please ensure the URL is accessible.";
