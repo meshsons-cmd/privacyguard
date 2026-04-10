@@ -30,8 +30,8 @@ Route::post('/api/scan', function (Request $request) {
     ]);
 
     // Connect the Laravel frontend to the Python API using secure HTTP requests
-    // Use env('AI_ENGINE_URL') for dynamic Cloud deployment (Railway/Render)
-    $apiUrl = env('AI_ENGINE_URL', 'http://127.0.0.1:8001/api/v1/audit/url');
+    // Use env('PYTHON_API_URL') or env('AI_ENGINE_URL') for dynamic Cloud deployment (Railway/Render)
+    $apiUrl = env('PYTHON_API_URL', env('AI_ENGINE_URL', 'http://127.0.0.1:8001/api/v1/audit/url'));
     
     try {
         $response = Http::withHeaders([
@@ -67,7 +67,7 @@ Route::post('/api/scan', function (Request $request) {
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('AI Auditor Proxy Failed: ' . $e->getMessage());
         return response()->json([
-            'message' => 'Unable to reach the AI Auditor Engine. Please ensure the Python backend is running on port 8001.',
+            'message' => 'Unable to reach the AI Auditor Engine. Please ensure the Python backend is running and accessible.',
             'debug_error' => $e->getMessage()
         ], 500);
     }
