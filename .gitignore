@@ -1,0 +1,16 @@
+.env
+.env.backup
+.env.production
+.idea
+.vscode
+node_modules
+vendor
+__pycache__
+venv
+venv_new
+venv_prod
+venv_final
+venv_final2
+venv_final3
+*.log
+*.pyc

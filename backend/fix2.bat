@@ -1,0 +1,9 @@
+@echo off
+cd /d D:\www\PrivacyGuard\backend
+echo Removing old venv...
+rmdir /s /q venv
+echo Creating new venv...
+python -m venv venv
+echo Installing requirements...
+venv\Scripts\python.exe -m pip install -r requirements.txt
+echo Done!
