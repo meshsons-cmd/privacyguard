@@ -25,6 +25,8 @@ Route::post('/report/download', [ReportController::class, 'downloadPdf'])->name(
 
 // Proxy route to the Python Backend API
 Route::post('/api/scan', function (Request $request) {
+    set_time_limit(180); // Prevent PHP script timeout during long AI operations
+
     $request->validate([
         'url' => 'required|url'
     ]);
@@ -37,7 +39,7 @@ Route::post('/api/scan', function (Request $request) {
         $response = Http::withHeaders([
             'X-API-Key' => $apiKey,
             'Authorization' => 'Bearer ' . $apiKey
-        ])->timeout(60)->post($apiUrl, [
+        ])->timeout(120)->post($apiUrl, [
             'url' => $request->input('url')
         ]);
 
@@ -69,6 +71,12 @@ Route::post('/api/scan', function (Request $request) {
             'details' => $errorData
         ], $response->status());
 
+    } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        \Illuminate\Support\Facades\Log::error('AI Auditor Proxy Timeout: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'The AI Auditor Engine is currently waking up from sleep mode or taking too long. Please wait 30 seconds and try again.',
+            'debug_error' => $e->getMessage()
+        ], 504);
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('AI Auditor Proxy Failed: ' . $e->getMessage());
         return response()->json([
