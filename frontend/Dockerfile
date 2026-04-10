@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     nodejs \
     npm \
+    sqlite3 \
+    libsqlite3-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql
+    && docker-php-ext-install gd pdo pdo_mysql pdo_sqlite
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
@@ -26,14 +28,13 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
-
 # Install dependencies and build assets
 RUN composer install --no-dev --optimize-autoloader
 RUN npm install && npm run build
+
+# Copy start script and make it executable
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
 # Update Apache DocumentRoot to Laravel's public directory
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
@@ -41,5 +42,5 @@ RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available
 # Expose port 80
 EXPOSE 80
 
-# Start Apache
-CMD ["apache2-foreground"]
+# Start Apache via our setup script
+CMD ["/usr/local/bin/start.sh"]
