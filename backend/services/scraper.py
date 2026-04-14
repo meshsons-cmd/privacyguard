@@ -1,4 +1,4 @@
-import cloudscraper
+from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 from typing import Optional
 import urllib.parse
@@ -8,33 +8,42 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+class BrowserResponse:
+    def __init__(self, text, url, status_code=200):
+        self.text = text
+        self.url = url
+        self.status_code = status_code
+
 class ScraperService:
     @staticmethod
-    def fetch_url(url: str):
+    def fetch_with_browser(url: str):
         try:
-            scraper = cloudscraper.create_scraper(browser={
-                'browser': 'chrome',
-                'platform': 'windows',
-                'desktop': True
-            })
-            response = scraper.get(
-                url,
-                timeout=20
-            )
-            logger.info(f"Fetched {url} - Status: {response.status_code}")
-            logger.info(f"Headers: {dict(response.headers)}")
-            if response.text:
-                logger.info(f"HTML (first 300 chars): {response.text[:300]}")
-            return response
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                
+                response = page.goto(url, timeout=60000)
+                
+                content = page.content()
+                final_url = page.url
+                status_code = response.status if response else 200
+                
+                browser.close()
+                
+                logger.info(f"Fetched {url} - Status: {status_code}")
+                if content:
+                    logger.info(f"HTML (first 300 chars): {content[:300]}")
+                    
+                return BrowserResponse(text=content, url=final_url, status_code=status_code)
         except Exception as e:
-            print("ERROR:", str(e))
+            print("Playwright Error:", str(e))
             print(traceback.format_exc())
             logger.error(f"Fetch error for {url}: {e}")
             return None
 
     @staticmethod
     def get_privacy_policy_url(base_url: str) -> Optional[str]:
-        response = ScraperService.fetch_url(base_url)
+        response = ScraperService.fetch_with_browser(base_url)
         
         if not response:
             raise ValueError("❌ Unable to access website. It may be blocking bots or is down.")
@@ -98,8 +107,8 @@ class ScraperService:
         
         for fallback in fallbacks:
             fallback_url = urllib.parse.urljoin(response.url, fallback)
-            fb_response = ScraperService.fetch_url(fallback_url)
-            if fb_response and fb_response.status_code == 200 and 'text/html' in fb_response.headers.get('Content-Type', '').lower():
+            fb_response = ScraperService.fetch_with_browser(fallback_url)
+            if fb_response and fb_response.status_code == 200:
                 logger.info(f"Detected privacy URL from fallbacks: {fallback_url}")
                 return fallback_url
                 
@@ -118,7 +127,7 @@ class ScraperService:
             logger.info(f"Final selected privacy URL: {privacy_url}")
             
             # 2. Fetch the actual privacy policy page
-            privacy_response = ScraperService.fetch_url(privacy_url)
+            privacy_response = ScraperService.fetch_with_browser(privacy_url)
             
             if not privacy_response or privacy_response.status_code != 200:
                 status = privacy_response.status_code if privacy_response else 'Failed'
