@@ -4,6 +4,7 @@ from typing import Optional
 import urllib.parse
 import re
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,14 @@ class ScraperService:
                 url,
                 timeout=20
             )
+            logger.info(f"Fetched {url} - Status: {response.status_code}")
+            logger.info(f"Headers: {dict(response.headers)}")
+            if response.text:
+                logger.info(f"HTML (first 300 chars): {response.text[:300]}")
             return response
         except Exception as e:
+            print("ERROR:", str(e))
+            print(traceback.format_exc())
             logger.error(f"Fetch error for {url}: {e}")
             return None
 
@@ -101,33 +108,38 @@ class ScraperService:
     @staticmethod
     def extract_legal_text(url: str) -> str:
         """Crawls a URL, finds the privacy policy, and extracts its text."""
-        
-        # 1. Find the privacy policy URL
-        privacy_url = ScraperService.get_privacy_policy_url(url)
-        
-        if not privacy_url:
-            raise ValueError("❌ Privacy Policy page not found automatically. Please enter it manually.")
+        try:
+            # 1. Find the privacy policy URL
+            privacy_url = ScraperService.get_privacy_policy_url(url)
             
-        logger.info(f"Final selected privacy URL: {privacy_url}")
-        
-        # 2. Fetch the actual privacy policy page
-        privacy_response = ScraperService.fetch_url(privacy_url)
-        
-        if not privacy_response or privacy_response.status_code != 200:
-            raise ValueError("❌ Unable to access the detected Privacy Policy page.")
+            if not privacy_url:
+                raise ValueError("❌ Privacy Policy page not found automatically. Please enter it manually.")
+                
+            logger.info(f"Final selected privacy URL: {privacy_url}")
             
-        privacy_soup = BeautifulSoup(privacy_response.text, 'html.parser')
-        
-        # Extract text (remove scripts, styles, etc.)
-        for script in privacy_soup(["script", "style", "nav", "footer", "header", "noscript", "svg", "iframe"]):
-            script.extract()
+            # 2. Fetch the actual privacy policy page
+            privacy_response = ScraperService.fetch_url(privacy_url)
             
-        text = privacy_soup.get_text(separator=' ')
-        
-        # Clean up whitespace
-        cleaned_text = re.sub(r'\s+', ' ', text).strip()
-        
-        if len(cleaned_text) < 100:
-            raise ValueError("❌ The detected Privacy Policy page does not contain enough text.")
+            if not privacy_response or privacy_response.status_code != 200:
+                status = privacy_response.status_code if privacy_response else 'Failed'
+                raise ValueError(f"❌ Unable to access the detected Privacy Policy page. Status: {status}")
+                
+            privacy_soup = BeautifulSoup(privacy_response.text, 'html.parser')
             
-        return cleaned_text
+            # Extract text (remove scripts, styles, etc.)
+            for script in privacy_soup(["script", "style", "nav", "footer", "header", "noscript", "svg", "iframe"]):
+                script.extract()
+                
+            text = privacy_soup.get_text(separator=' ')
+            
+            # Clean up whitespace
+            cleaned_text = re.sub(r'\s+', ' ', text).strip()
+            
+            if len(cleaned_text) < 100:
+                raise ValueError("❌ The detected Privacy Policy page does not contain enough text.")
+                
+            return cleaned_text
+        except Exception as e:
+            print("ERROR:", str(e))
+            print(traceback.format_exc())
+            raise ValueError(str(e))

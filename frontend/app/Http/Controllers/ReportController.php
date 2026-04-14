@@ -48,11 +48,18 @@ class ReportController extends Controller
             }
 
             $errorData = $response->json();
-            $errorMessage = is_array($errorData) && isset($errorData['detail']) 
-                ? (is_string($errorData['detail']) ? $errorData['detail'] : json_encode($errorData['detail'])) 
-                : 'The AI Auditor Engine returned an error.';
+            
+            $errorMessage = 'The AI Auditor Engine returned an error.';
+            if (is_array($errorData)) {
+                if (isset($errorData['error'])) {
+                    $errorMessage = is_string($errorData['error']) ? $errorData['error'] : json_encode($errorData['error']);
+                } elseif (isset($errorData['detail'])) {
+                    $errorMessage = is_string($errorData['detail']) ? $errorData['detail'] : json_encode($errorData['detail']);
+                }
+            }
 
             return response()->json([
+                'success' => false,
                 'message' => $errorMessage,
                 'details' => $errorData
             ], $response->status());
@@ -60,12 +67,14 @@ class ReportController extends Controller
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             \Illuminate\Support\Facades\Log::error('AI Auditor Proxy Timeout: ' . $e->getMessage());
             return response()->json([
+                'success' => false,
                 'message' => 'The AI Auditor Engine is currently waking up from sleep mode or taking too long. Please wait 30 seconds and try again.',
                 'debug_error' => $e->getMessage()
             ], 504);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('AI Auditor Proxy Failed: ' . $e->getMessage());
             return response()->json([
+                'success' => false,
                 'message' => 'Connection to AI Engine failed: ' . $e->getMessage(),
                 'debug_error' => $e->getMessage()
             ], 500);
